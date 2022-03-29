@@ -10,7 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stream-stack/dispatcher/pkg/manager"
 	protocol2 "github.com/stream-stack/dispatcher/pkg/manager/protocol"
+	"github.com/stream-stack/dispatcher/pkg/router"
 	"net"
+	"net/http"
 )
 
 func StartReceive(ctx context.Context) error {
@@ -40,12 +42,20 @@ func StartReceive(ctx context.Context) error {
 func handler(ctx context.Context, event event.Event) protocol.Result {
 	//根据event获取分片
 	//根据分片对应的storeset,发送消息
-	addr := manager.GetStoreAddr(event)
+	find, b := router.Find(event.ID())
+	if !b {
+		return http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
+	}
+	store := find.(protocol2.Store)
+	conn := manager.GetStoreConnection(store)
+	if conn == nil {
+		return http2.NewResult(http.StatusInternalServerError, "store connection not found for %s", store.Name)
+	}
 	json, err := event.MarshalJSON()
 	if err != nil {
 		return err
 	}
-	apply, err := addr.Apply(ctx, &protocol2.ApplyRequest{
+	apply, err := conn.Apply(ctx, &protocol2.ApplyRequest{
 		StreamName: event.Subject(),
 		StreamId:   event.Source(),
 		EventId:    event.ID(),

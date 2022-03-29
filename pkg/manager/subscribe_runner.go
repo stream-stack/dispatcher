@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	_ "github.com/Jille/grpc-multi-resolver"
-	"github.com/cloudevents/sdk-go/v2/event"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
 	"google.golang.org/grpc"
@@ -77,10 +76,10 @@ func (r *SubscribeRunner) Start() {
 
 var connections = make(map[string]*SubscribeRunner)
 
-func GetStoreAddr(e event.Event) protocol.EventServiceClient {
-	//TODO:根据e和已存在的分片,返回store的地址
-	for _, runner := range connections {
-		return runner.client
+func GetStoreConnection(store protocol.Store) protocol.EventServiceClient {
+	runner, ok := connections[store.Name]
+	if !ok {
+		return nil
 	}
-	return nil
+	return runner.client
 }
