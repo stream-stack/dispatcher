@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stream-stack/dispatcher/pkg/config"
@@ -27,6 +28,7 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logrus.SetLevel(logrus.TraceLevel)
 			if err := manager.StartManager(ctx); err != nil {
 				return err
 			}

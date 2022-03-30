@@ -20,6 +20,9 @@ func StartHttpServer(ctx context.Context) {
 	r.Handle(http.MethodGet, "/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "healthy")
 	})
+	r.Handle(http.MethodGet, "/conns", func(c *gin.Context) {
+		c.JSON(http.StatusOK, connections)
+	})
 	r.Handle(http.MethodGet, "/configuration", func(c *gin.Context) {
 		c.JSON(http.StatusOK, configuration)
 	})
@@ -30,17 +33,6 @@ func StartHttpServer(ctx context.Context) {
 			c.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		//data, err := c.GetRawData()
-		//if err != nil {
-		//	c.JSON(http.StatusInternalServerError, err)
-		//	return
-		//}
-		//
-		//err = json.Unmarshal(data, &stores)
-		//if err != nil {
-		//	c.JSON(http.StatusInternalServerError, err)
-		//	return
-		//}
 		for _, store := range stores {
 			_, ok := connections[store.Name]
 			if ok {
@@ -50,7 +42,7 @@ func StartHttpServer(ctx context.Context) {
 			runner := &SubscribeRunner{
 				ctx:        cancel,
 				cancelFunc: cancelFunc,
-				store:      store,
+				Store:      store,
 			}
 			if runner.Connect() != nil {
 				c.JSON(http.StatusInternalServerError, err)
@@ -58,11 +50,13 @@ func StartHttpServer(ctx context.Context) {
 			}
 			configuration.Stores = append(configuration.Stores, store)
 			connections[store.Name] = runner
-			runner.Start()
+			runner.Start(func() {
+				name := store.Name
+				delete(connections, name)
+			})
 		}
 		time.Sleep(time.Second * 4)
 		c.JSON(http.StatusOK, configuration)
-		//configuration.Stores = stores
 	})
 	//r.Handle(http.MethodGet, "/configuration/partitions", func(c *gin.Context) {
 	//	c.JSON(http.StatusOK, configuration.Partitions)

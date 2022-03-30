@@ -16,13 +16,13 @@ import (
 )
 
 func StartReceive(ctx context.Context) error {
-	//TODO:http server参数设置
-	listen, err := net.Listen("TCP", address)
+	//TODO:clientHTTP server参数设置
+	listen, err := net.Listen("tcp", address)
 	if err != nil {
 		logrus.Errorf("[recever]listen %s error:%s", address, err)
 		return err
 	}
-	http, err := v2.NewClientHTTP(http2.WithListener(listen))
+	clientHTTP, err := v2.NewClientHTTP(http2.WithListener(listen))
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func StartReceive(ctx context.Context) error {
 			_ = listen.Close()
 		}
 	}()
-	err = http.StartReceiver(ctx, handler)
+	err = clientHTTP.StartReceiver(ctx, handler)
 	if err != nil {
 		return err
 	}

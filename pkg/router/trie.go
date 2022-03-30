@@ -13,7 +13,7 @@ type Matcher struct {
 }
 
 func (p *Matcher) InitMatcher() error {
-	compile, err := regexp.Compile(p.regexp)
+	compile, err := regexp.Compile("^" + p.regexp + "$")
 	if err != nil {
 		return err
 	}

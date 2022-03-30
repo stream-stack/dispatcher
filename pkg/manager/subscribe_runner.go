@@ -1,12 +1,12 @@
 package manager
 
 import (
-	"bytes"
 	"context"
-	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	_ "github.com/Jille/grpc-multi-resolver"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/sirupsen/logrus"
 	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/health"
@@ -18,7 +18,7 @@ import (
 type SubscribeRunner struct {
 	ctx        context.Context
 	client     protocol.EventServiceClient
-	store      protocol.Store
+	Store      protocol.Store `json:"store"`
 	cancelFunc context.CancelFunc
 }
 
@@ -28,7 +28,7 @@ func (r *SubscribeRunner) Connect() error {
 		grpc_retry.WithBackoff(grpc_retry.BackoffExponential(100 * time.Millisecond)),
 		grpc_retry.WithMax(5),
 	}
-	conn, err := grpc.Dial("dns:///"+strings.Join(r.store.Uris, ","),
+	conn, err := grpc.Dial("multi:///"+strings.Join(r.Store.Uris, ","),
 		grpc.WithDefaultServiceConfig(serviceConfig), grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(grpc.WaitForReady(true)),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(retryOpts...)))
@@ -39,18 +39,23 @@ func (r *SubscribeRunner) Connect() error {
 	return nil
 }
 
-func (r *SubscribeRunner) Start() {
+func (r *SubscribeRunner) Start(clear func()) {
 	hostname, _ := os.Hostname()
 	StreamId := os.Getenv("STREAM_ID")
+	logrus.Infof("启动对store的分片stream订阅,hostname:%s,stramid:%s", hostname, StreamId)
 	go func() {
+		defer clear()
+		defer func() {
+			fmt.Println(len(connections))
+		}()
 		subscribe, err := r.client.Subscribe(r.ctx, &protocol.SubscribeRequest{
 			SubscribeId: hostname,
-			Regexp:      "streamName='_system_broker_partition' && streamId = '" + StreamId + "'",
-			Offset:      0,
+			Regexp:      "streamName == '_system_broker_partition' && streamId == '" + StreamId + "'",
+			//Regexp: "streamName == '_system_broker_partition'",
+			Offset: 0,
 		})
 		if err != nil {
-			//TODO:错误处理
-			panic(err)
+			logrus.Warnf("订阅partition出错,%v", err)
 		}
 		for {
 			select {
@@ -59,16 +64,19 @@ func (r *SubscribeRunner) Start() {
 			default:
 				recv, err := subscribe.Recv()
 				if err != nil {
-					panic(err)
+					logrus.Warnf("接收partition出错,%v", err)
+					continue
 				}
+				logrus.Warnf("接收到分片数据,数据为:%+v", string(recv.Data))
 				partition := &protocol.Partition{}
-				err = binary.Read(bytes.NewBuffer(recv.Data), binary.BigEndian, partition)
+				err = json.Unmarshal(recv.Data, partition)
 				if err != nil {
-					panic(err)
+					logrus.Warnf("反序列化partition出错,%v", err)
+					continue
 				}
 				partitionAddCh <- *partition
 
-				fmt.Println(recv)
+				logrus.Debugf("收到分片消息,%+v", partition)
 			}
 		}
 	}()
