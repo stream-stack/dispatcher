@@ -3,7 +3,6 @@ package manager
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	_ "github.com/Jille/grpc-multi-resolver"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/sirupsen/logrus"
@@ -41,18 +40,14 @@ func (r *SubscribeRunner) Connect() error {
 
 func (r *SubscribeRunner) Start(clear func()) {
 	hostname, _ := os.Hostname()
-	StreamId := os.Getenv("STREAM_ID")
+	StreamId := os.Getenv("STREAM_NAME")
 	logrus.Infof("启动对store的分片stream订阅,hostname:%s,stramid:%s", hostname, StreamId)
 	go func() {
 		defer clear()
-		defer func() {
-			fmt.Println(len(connections))
-		}()
 		subscribe, err := r.client.Subscribe(r.ctx, &protocol.SubscribeRequest{
 			SubscribeId: hostname,
 			Regexp:      "streamName == '_system_broker_partition' && streamId == '" + StreamId + "'",
-			//Regexp: "streamName == '_system_broker_partition'",
-			Offset: 0,
+			Offset:      0,
 		})
 		if err != nil {
 			logrus.Warnf("订阅partition出错,%v", err)
