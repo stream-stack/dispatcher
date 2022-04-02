@@ -1,9 +1,8 @@
-package manager
+package back
 
 import (
 	"context"
 	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
-	"github.com/stream-stack/dispatcher/pkg/router"
 )
 
 var partitionAddCh = make(chan protocol.Partition, 1)
@@ -25,7 +24,7 @@ func StartPartitionAdder(ctx context.Context) {
 				continue
 			}
 			configuration.Partitions = append(configuration.Partitions, partition)
-			_ = router.AddNode(partition.RangeRegexp, partition.Store)
+			_ = AddNode(partition.RangeRegexp, partition.Store)
 		}
 	}
 }

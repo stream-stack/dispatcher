@@ -8,11 +8,12 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	http2 "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/sirupsen/logrus"
+	"github.com/stream-stack/dispatcher/pkg/back"
 	"github.com/stream-stack/dispatcher/pkg/manager"
 	protocol2 "github.com/stream-stack/dispatcher/pkg/manager/protocol"
-	"github.com/stream-stack/dispatcher/pkg/router"
 	"net"
 	"net/http"
+	"strconv"
 )
 
 func StartReceive(ctx context.Context) error {
@@ -42,7 +43,7 @@ func StartReceive(ctx context.Context) error {
 func handler(ctx context.Context, event event.Event) protocol.Result {
 	//根据event获取分片
 	//根据分片对应的storeset,发送消息
-	find, b := router.Find(event.ID())
+	find, b := back.Find(event.ID())
 	if !b {
 		return http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
 	}
@@ -55,10 +56,14 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 	if err != nil {
 		return err
 	}
+	parseUint, err := strconv.ParseUint(event.ID(), 10, 64)
+	if err != nil {
+		return err
+	}
 	apply, err := conn.Apply(ctx, &protocol2.ApplyRequest{
 		StreamName: event.Subject(),
 		StreamId:   event.Source(),
-		EventId:    event.ID(),
+		EventId:    parseUint,
 		Data:       json,
 	})
 	if err != nil {

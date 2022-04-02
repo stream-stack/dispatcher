@@ -8,6 +8,7 @@ import (
 	"github.com/stream-stack/dispatcher/pkg/config"
 	"github.com/stream-stack/dispatcher/pkg/manager"
 	"github.com/stream-stack/dispatcher/pkg/recever"
+	"github.com/stream-stack/dispatcher/pkg/router"
 	"os"
 	"os/signal"
 )
@@ -29,9 +30,11 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logrus.SetLevel(logrus.TraceLevel)
-			if err := manager.StartManager(ctx); err != nil {
+			if err := manager.StartManagerGrpc(ctx); err != nil {
 				return err
 			}
+			go manager.StartPartitionSubscribeManager(ctx)
+			go router.StartRoute(ctx)
 			if err := recever.StartReceive(ctx); err != nil {
 				return err
 			}

@@ -1,10 +1,11 @@
-package manager
+package back
 
 import (
 	"context"
 	"fmt"
 	"github.com/braintree/manners"
 	"github.com/gin-gonic/gin"
+	"github.com/stream-stack/dispatcher/pkg/manager"
 	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
 	"net/http"
 	"time"
@@ -39,7 +40,7 @@ func StartHttpServer(ctx context.Context) {
 				continue
 			}
 			cancel, cancelFunc := context.WithCancel(ctx)
-			runner := &SubscribeRunner{
+			runner := &manager.SubscribeRunner{
 				ctx:        cancel,
 				cancelFunc: cancelFunc,
 				Store:      store,
@@ -71,7 +72,7 @@ func StartHttpServer(ctx context.Context) {
 			manners.Close()
 		}
 	}()
-	if err := manners.ListenAndServe(address, r); err != nil {
+	if err := manners.ListenAndServe(manager.address, r); err != nil {
 		fmt.Printf("failed start manager serve: %v", err)
 	}
 }
