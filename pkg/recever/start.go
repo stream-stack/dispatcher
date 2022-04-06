@@ -7,10 +7,12 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	http2 "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/ryszard/goskiplist/skiplist"
 	"github.com/sirupsen/logrus"
-	"github.com/stream-stack/dispatcher/pkg/back"
 	"github.com/stream-stack/dispatcher/pkg/manager"
-	protocol2 "github.com/stream-stack/dispatcher/pkg/manager/protocol"
+	protocol2 "github.com/stream-stack/dispatcher/pkg/protocol"
+	"github.com/stream-stack/dispatcher/pkg/router"
+	"google.golang.org/grpc"
 	"net"
 	"net/http"
 	"strconv"
@@ -41,17 +43,6 @@ func StartReceive(ctx context.Context) error {
 }
 
 func handler(ctx context.Context, event event.Event) protocol.Result {
-	//根据event获取分片
-	//根据分片对应的storeset,发送消息
-	find, b := back.Find(event.ID())
-	if !b {
-		return http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
-	}
-	store := find.(protocol2.Store)
-	conn := manager.GetStoreConnection(store)
-	if conn == nil {
-		return http2.NewResult(http.StatusInternalServerError, "store connection not found for %s", store.Name)
-	}
 	json, err := event.MarshalJSON()
 	if err != nil {
 		return err
@@ -60,17 +51,40 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 	if err != nil {
 		return err
 	}
-	apply, err := conn.Apply(ctx, &protocol2.ApplyRequest{
-		StreamName: event.Subject(),
-		StreamId:   event.Source(),
-		EventId:    parseUint,
-		Data:       json,
-	})
-	if err != nil {
-		return err
+	result := make(chan error, 1)
+	router.PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
+		iterator := partitions.Range(0, parseUint)
+		iterator.Previous()
+		var store *protocol2.StoreSet
+		for iterator.Next() {
+			store = iterator.Value().(*protocol2.StoreSet)
+		}
+		if store == nil {
+			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
+			return
+		}
+
+		manager.StoreSetConnOperation <- func(m map[string]*manager.StoreSetConn) {
+			conn := manager.GetOrCreateConn(ctx, m, store)
+			conn.OpCh <- func(ctx context.Context, connection *grpc.ClientConn, Store *protocol2.StoreSet) {
+				client := protocol2.NewEventServiceClient(connection)
+				apply, err := client.Apply(ctx, &protocol2.ApplyRequest{
+					StreamName: event.Subject(),
+					StreamId:   event.Source(),
+					EventId:    parseUint,
+					Data:       json,
+				})
+				if err != nil {
+					result <- err
+					return
+				}
+				if !apply.Ack {
+					result <- fmt.Errorf(apply.Message)
+				}
+				result <- protocol.ResultACK
+			}
+		}
+
 	}
-	if !apply.Ack {
-		return fmt.Errorf(apply.Message)
-	}
-	return protocol.ResultACK
+	return <-result
 }

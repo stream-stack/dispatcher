@@ -3,7 +3,7 @@ package manager
 import (
 	"context"
 	"fmt"
-	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
+	"github.com/stream-stack/dispatcher/pkg/protocol"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"net"
@@ -15,7 +15,10 @@ type xdsServer struct {
 
 func (x *xdsServer) StoreSetPush(ctx context.Context, request *protocol.StoreSetPushRequest) (*protocol.StoreSetPushResponse, error) {
 	for _, store := range request.Stores {
-		StoreSetAddCh <- store
+		StoreSetConnOperation <- func(m map[string]*StoreSetConn) {
+			conn := GetOrCreateConn(x.ctx, m, store)
+			conn.OpCh <- subscribePartition
+		}
 	}
 	return &protocol.StoreSetPushResponse{}, nil
 }

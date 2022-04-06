@@ -33,7 +33,7 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			if err := manager.StartManagerGrpc(ctx); err != nil {
 				return err
 			}
-			go manager.StartPartitionSubscribeManager(ctx)
+			go manager.StartStoreSetConnManager(ctx)
 			go router.StartRoute(ctx)
 			if err := recever.StartReceive(ctx); err != nil {
 				return err

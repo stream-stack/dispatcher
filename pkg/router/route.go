@@ -2,19 +2,27 @@ package router
 
 import (
 	"context"
-	"github.com/stream-stack/dispatcher/pkg/manager/protocol"
+	"github.com/ryszard/goskiplist/skiplist"
+	"github.com/stream-stack/dispatcher/pkg/protocol"
 )
 
-var PartitionAddCh = make(chan *protocol.Partition)
-var partitionMap = make(map[uint64]*protocol.Partition)
+var PartitionOpCh = make(chan func(ctx context.Context, partitions *skiplist.SkipList))
+
+var partitionList = skiplist.NewIntMap()
 
 func StartRoute(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case add := <-PartitionAddCh:
-			partitionMap[add.Begin] = add
+		case op := <-PartitionOpCh:
+			op(ctx, partitionList)
 		}
+	}
+}
+
+func AddPartition(partition *protocol.Partition) {
+	PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
+		partitions.Set(partition.Begin, partition.Store)
 	}
 }
