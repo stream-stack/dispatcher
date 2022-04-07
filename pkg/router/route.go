@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"github.com/ryszard/goskiplist/skiplist"
+	"github.com/sirupsen/logrus"
 	"github.com/stream-stack/dispatcher/pkg/protocol"
 )
 
@@ -23,6 +24,8 @@ func StartRoute(ctx context.Context) {
 
 func AddPartition(partition *protocol.Partition) {
 	PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
-		partitions.Set(partition.Begin, partition.Store)
+		logrus.Debugf("add partition %+v", partition)
+		partitions.Set(int(partition.Begin), partition.Store)
+		logrus.Debugf("add partition end , current partition length: %v", partitions.Len())
 	}
 }

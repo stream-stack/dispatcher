@@ -24,10 +24,11 @@ type StoreSetConn struct {
 }
 
 func (c *StoreSetConn) Start(ctx context.Context) {
+	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet), 1)
+	cancel, cancelFunc := context.WithCancel(ctx)
+	c.cancelFunc = cancelFunc
 	go func() {
-		cancel, cancelFunc := context.WithCancel(ctx)
-		c.cancelFunc = cancelFunc
-
+		logrus.Debugf("start connection")
 		for {
 			select {
 			case <-cancel.Done():
@@ -49,8 +50,10 @@ func GetOrCreateConn(ctx context.Context, m map[string]*StoreSetConn, store *pro
 	name := GetStoreSetName(store)
 	conn, ok := m[name]
 	if ok {
+		logrus.Debugf("connection %s exist,return", name)
 		return conn
 	}
+	logrus.Debugf("connection %s not exist,create", name)
 	conn = &StoreSetConn{Store: store}
 	conn.Start(ctx)
 	m[name] = conn
@@ -69,9 +72,10 @@ func (c *StoreSetConn) connect() error {
 		grpc.WithDefaultCallOptions(grpc.WaitForReady(true)),
 		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(retryOpts...)))
 	if err != nil {
-		logrus.Errorf("连接storset:%s出现错误,%v", join, err)
+		logrus.Errorf("connect storset:%s error:%v", join, err)
 		return err
 	}
+	logrus.Debugf("connect storeset %s success", join)
 	c.connection = conn
 	return nil
 }
@@ -82,7 +86,7 @@ func (c *StoreSetConn) Stop() {
 }
 
 func (c *StoreSetConn) work(ctx context.Context) {
-	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet), 1)
+	logrus.Debugf("StoreSetConn working")
 	defer func() {
 		close(c.OpCh)
 	}()
@@ -91,6 +95,7 @@ func (c *StoreSetConn) work(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case op := <-c.OpCh:
+			logrus.Debugf("StoreSetConn recv op function , call function %T", op)
 			op(ctx, c.connection, c.Store)
 		}
 	}

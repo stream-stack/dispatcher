@@ -35,10 +35,12 @@ func StartReceive(ctx context.Context) error {
 			_ = listen.Close()
 		}
 	}()
-	err = clientHTTP.StartReceiver(ctx, handler)
-	if err != nil {
-		return err
-	}
+	go func() {
+		err = clientHTTP.StartReceiver(ctx, handler)
+		if err != nil {
+			panic(err)
+		}
+	}()
 	return nil
 }
 
@@ -53,12 +55,13 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 	}
 	result := make(chan error, 1)
 	router.PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
-		iterator := partitions.Range(0, parseUint)
+		iterator := partitions.Range(0, int(parseUint))
 		iterator.Previous()
 		var store *protocol2.StoreSet
 		for iterator.Next() {
 			store = iterator.Value().(*protocol2.StoreSet)
 		}
+		logrus.Debugf(`获取到的store为 %+v,eventId:%d`, store, parseUint)
 		if store == nil {
 			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
 			return
@@ -68,12 +71,14 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 			conn := manager.GetOrCreateConn(ctx, m, store)
 			conn.OpCh <- func(ctx context.Context, connection *grpc.ClientConn, Store *protocol2.StoreSet) {
 				client := protocol2.NewEventServiceClient(connection)
+				logrus.Debugf(`开始向storeset中发送cloudEvent数据`)
 				apply, err := client.Apply(ctx, &protocol2.ApplyRequest{
 					StreamName: event.Subject(),
 					StreamId:   event.Source(),
 					EventId:    parseUint,
 					Data:       json,
 				})
+				logrus.Debugf(`向storeset中发送cloudEvent数据,返回值为:%+v,error:%v`, apply, err)
 				if err != nil {
 					result <- err
 					return
