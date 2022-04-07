@@ -6,7 +6,7 @@ import (
 	"github.com/stream-stack/dispatcher/pkg/protocol"
 )
 
-var PartitionOpCh = make(chan func(ctx context.Context, partitions *skiplist.SkipList))
+var PartitionOpCh = make(chan func(ctx context.Context, partitions *skiplist.SkipList), 1)
 
 var partitionList = skiplist.NewIntMap()
 

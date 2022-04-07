@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var StoreSetConnOperation = make(chan func(map[string]*StoreSetConn))
+var StoreSetConnOperation = make(chan func(map[string]*StoreSetConn), 1)
 
 type StoreSetConn struct {
 	connection *grpc.ClientConn
@@ -82,7 +82,7 @@ func (c *StoreSetConn) Stop() {
 }
 
 func (c *StoreSetConn) work(ctx context.Context) {
-	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet))
+	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet), 1)
 	defer func() {
 		close(c.OpCh)
 	}()
