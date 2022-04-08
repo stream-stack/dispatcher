@@ -1,0 +1,14 @@
+POST http://127.0.0.1
+Content-Type: application/json
+Ce-Id:100
+Ce-Specversion:1.0
+#Ce-Subject:t-ns
+Ce-Type:test
+Ce-Source:testSource
+Content-Type:application/json
+
+{
+  "test":1
+}
+
+###
