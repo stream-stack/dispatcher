@@ -30,7 +30,10 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logrus.SetLevel(logrus.TraceLevel)
-			if err := manager.StartManagerGrpc(ctx); err != nil {
+			if err := manager.StartManagerHttp(ctx); err != nil {
+				return err
+			}
+			if err := manager.StartListWatcher(ctx); err != nil {
 				return err
 			}
 			go manager.StartStoreSetConnManager(ctx)

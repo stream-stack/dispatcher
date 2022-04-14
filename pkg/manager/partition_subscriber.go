@@ -11,14 +11,13 @@ import (
 	"strings"
 )
 
-func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *protocol.StoreSet) {
+func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *storeset) {
 	hostname, _ := os.Hostname()
-	StreamId := os.Getenv("STREAM_NAME")
-	logrus.Infof("start partition subscribe for storeset %s,hostname:%s,stramid:%s", strings.Join(Store.Uris, ","), hostname, StreamId)
+	logrus.Infof("start partition subscribe for storeset %s,hostname:%s,stramid:%s", strings.Join(Store.Uris, ","), hostname, streamName)
 	client := protocol.NewEventServiceClient(conn)
 	subscribe, err := client.Subscribe(ctx, &protocol.SubscribeRequest{
 		SubscribeId: hostname,
-		Regexp:      "streamName == '_system_broker_partition' && streamId == '" + StreamId + "'",
+		Regexp:      "streamName == '_system_broker_partition' && streamId == '" + streamName + "'",
 		Offset:      0,
 	})
 	if err != nil {
