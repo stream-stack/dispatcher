@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *protocol.StoreSet) {
+func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *storeset) {
 	hostname, _ := os.Hostname()
 	logrus.Infof("start partition subscribe for storeset %s,hostname:%s,stramid:%s", strings.Join(Store.Uris, ","), hostname, streamName)
 	client := protocol.NewEventServiceClient(conn)
