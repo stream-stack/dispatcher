@@ -6,6 +6,7 @@ import (
 	_ "github.com/Jille/grpc-multi-resolver"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/sirupsen/logrus"
+	"github.com/stream-stack/dispatcher/pkg/protocol"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/health"
 	"strings"
@@ -16,14 +17,14 @@ var StoreSetConnOperation = make(chan func(map[string]*StoreSetConn), 1)
 
 type StoreSetConn struct {
 	connection *grpc.ClientConn
-	Store      *storeset `json:"store"`
+	Store      *protocol.StoreSet `json:"store"`
 
 	cancelFunc context.CancelFunc
-	OpCh       chan func(ctx context.Context, connection *grpc.ClientConn, Store *storeset)
+	OpCh       chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet)
 }
 
 func (c *StoreSetConn) Start(ctx context.Context) {
-	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *storeset), 1)
+	c.OpCh = make(chan func(ctx context.Context, connection *grpc.ClientConn, Store *protocol.StoreSet), 1)
 	cancel, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 	go func() {
@@ -45,7 +46,7 @@ func (c *StoreSetConn) Start(ctx context.Context) {
 	}()
 }
 
-func GetOrCreateConn(ctx context.Context, m map[string]*StoreSetConn, store *storeset) *StoreSetConn {
+func GetOrCreateConn(ctx context.Context, m map[string]*StoreSetConn, store *protocol.StoreSet) *StoreSetConn {
 	name := GetStoreSetName(store)
 	conn, ok := m[name]
 	if ok {
@@ -119,6 +120,6 @@ func StartStoreSetConnManager(ctx context.Context) {
 
 }
 
-func GetStoreSetName(add *storeset) string {
+func GetStoreSetName(add *protocol.StoreSet) string {
 	return fmt.Sprintf(`%s/%s`, add.Namespace, add.Name)
 }
