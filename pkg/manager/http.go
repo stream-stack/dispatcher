@@ -14,13 +14,13 @@ var statisticsInst = &statistics{}
 
 type statistics struct {
 	Uris              []string `json:"uris,omitempty"`
-	PartitionCount    int      `json:"partitionCount,omitempty"`
+	PartitionCount    uint64   `json:"partitionCount,omitempty"`
 	MaxPartitionBegin uint64   `json:"maxPartitionBegin,omitempty"`
 	MaxEvent          uint64   `json:"maxEvent,omitempty"`
 	TotalDataSize     uint64   `json:"totalDataSize,omitempty"`
 }
 
-func SetStatisticsWithPartition(partition *protocol.Partition, total int) {
+func SetStatisticsWithPartition(partition *protocol.Partition, total uint64) {
 	if statisticsInst.MaxPartitionBegin <= partition.Begin {
 		statisticsInst.MaxPartitionBegin = partition.Begin
 		statisticsInst.Uris = partition.Store.Uris

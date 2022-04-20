@@ -22,11 +22,11 @@ func StartRoute(ctx context.Context) {
 	}
 }
 
-func AddPartition(partition *protocol.Partition, post func(partition *protocol.Partition, total int)) {
+func AddPartition(partition *protocol.Partition, post func(partition *protocol.Partition, total uint64)) {
 	PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
 		logrus.Debugf("add partition %+v", partition)
 		partitions.Set(int(partition.Begin), partition.Store)
-		post(partition, partitions.Len())
+		post(partition, uint64(partitions.Len()))
 		logrus.Debugf("add partition end , current partition length: %v", partitions.Len())
 	}
 }
