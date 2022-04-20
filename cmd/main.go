@@ -30,7 +30,7 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logrus.SetLevel(logrus.TraceLevel)
-			if err := manager.StartManagerHttp(ctx); err != nil {
+			if err := manager.StartManagerHttp(ctx, cancelFunc); err != nil {
 				return err
 			}
 			if err := manager.StartListWatcher(ctx); err != nil {
@@ -38,7 +38,7 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			}
 			go manager.StartStoreSetConnManager(ctx)
 			go router.StartRoute(ctx)
-			if err := recever.StartReceive(ctx); err != nil {
+			if err := recever.StartReceive(ctx, cancelFunc); err != nil {
 				return err
 			}
 
@@ -52,6 +52,7 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 	viper.AutomaticEnv()
 	viper.AddConfigPath(`.`)
 	config.BuildFlags(command)
+	_ = viper.BindPFlags(command.Flags())
 
 	return command, ctx, cancelFunc
 }

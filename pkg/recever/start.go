@@ -22,7 +22,7 @@ import (
 //TODO:通过viper获取环境变量,参数
 var StreamId = os.Getenv("STREAM_NAME")
 
-func StartReceive(ctx context.Context) error {
+func StartReceive(ctx context.Context, cancelFunc context.CancelFunc) error {
 	//TODO:clientHTTP server参数设置
 	listen, err := net.Listen("tcp", address)
 	if err != nil {
@@ -42,7 +42,8 @@ func StartReceive(ctx context.Context) error {
 	go func() {
 		err = clientHTTP.StartReceiver(ctx, handler)
 		if err != nil {
-			panic(err)
+			logrus.Errorf("start cloudevents receiver error:%v", err)
+			cancelFunc()
 		}
 	}()
 	return nil
@@ -89,8 +90,10 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 				}
 				if !apply.Ack {
 					result <- fmt.Errorf(apply.Message)
+					return
 				}
 				result <- protocol.ResultACK
+				manager.SetStatisticsWithCloudEvent(event, parseUint, json)
 			}
 		}
 

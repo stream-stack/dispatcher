@@ -40,7 +40,7 @@ func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *proto
 					logrus.Errorf("反序列化分片数据出错,%v", err)
 				}
 				logrus.Debugf("收到分片消息,%+v", partition)
-				router.AddPartition(partition)
+				router.AddPartition(partition, SetStatisticsWithPartition)
 			}
 		}
 	}()
