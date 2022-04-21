@@ -4,18 +4,19 @@ import (
 	"context"
 	pp "github.com/golang/protobuf/proto"
 	"github.com/sirupsen/logrus"
-	"github.com/stream-stack/dispatcher/pkg/protocol"
+	"github.com/stream-stack/common/protocol/operator"
+	"github.com/stream-stack/common/protocol/store"
 	"github.com/stream-stack/dispatcher/pkg/router"
 	"google.golang.org/grpc"
 	"os"
 	"strings"
 )
 
-func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *protocol.StoreSet) {
+func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *operator.StoreSet) {
 	hostname, _ := os.Hostname()
 	logrus.Infof("start partition subscribe for storeset %s,hostname:%s,stramid:%s", strings.Join(Store.Uris, ","), hostname, streamName)
-	client := protocol.NewEventServiceClient(conn)
-	subscribe, err := client.Subscribe(ctx, &protocol.SubscribeRequest{
+	client := store.NewEventServiceClient(conn)
+	subscribe, err := client.Subscribe(ctx, &store.SubscribeRequest{
 		SubscribeId: hostname,
 		Regexp:      "streamName == '_system_broker_partition' && streamId == '" + streamName + "'",
 		Offset:      0,
@@ -35,7 +36,7 @@ func subscribePartition(ctx context.Context, conn *grpc.ClientConn, Store *proto
 					logrus.Errorf("recv partition error,%v", err)
 					continue
 				}
-				partition := &protocol.Partition{}
+				partition := &operator.Partition{}
 				if err = pp.Unmarshal(recv.Data, partition); err != nil {
 					logrus.Errorf("反序列化分片数据出错,%v", err)
 				}

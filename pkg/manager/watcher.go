@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"github.com/stream-stack/dispatcher/pkg/protocol"
-	v1 "github.com/stream-stack/dispatcher/pkg/storeset/v1"
+	v1 "github.com/stream-stack/common/crd/storeset/v1"
+	"github.com/stream-stack/common/protocol/operator"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -116,7 +116,7 @@ func (s *storesetResourceEventHandler) OnDelete(obj interface{}) {
 	}
 }
 
-func convert(obj interface{}) (*protocol.StoreSet, error) {
+func convert(obj interface{}) (*operator.StoreSet, error) {
 	u, ok := obj.(*unstructured.Unstructured)
 	if !ok {
 		return nil, fmt.Errorf("cast type %T conversion to unstructured.Unstructured failed", obj)
@@ -135,8 +135,8 @@ func convert(obj interface{}) (*protocol.StoreSet, error) {
 	return store, nil
 }
 
-func NewStoreset(set *v1.StoreSet) *protocol.StoreSet {
-	s := &protocol.StoreSet{
+func NewStoreset(set *v1.StoreSet) *operator.StoreSet {
+	s := &operator.StoreSet{
 		Name:      set.Name,
 		Namespace: set.Namespace,
 		Uris:      buildStoreUri(set),

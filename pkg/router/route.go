@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/ryszard/goskiplist/skiplist"
 	"github.com/sirupsen/logrus"
-	"github.com/stream-stack/dispatcher/pkg/protocol"
+	"github.com/stream-stack/common/protocol/operator"
 )
 
 var PartitionOpCh = make(chan func(ctx context.Context, partitions *skiplist.SkipList), 1)
@@ -22,7 +22,7 @@ func StartRoute(ctx context.Context) {
 	}
 }
 
-func AddPartition(partition *protocol.Partition, post func(partition *protocol.Partition, total uint64)) {
+func AddPartition(partition *operator.Partition, post func(partition *operator.Partition, total uint64)) {
 	PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
 		logrus.Debugf("add partition %+v", partition)
 		partitions.Set(int(partition.Begin), partition.Store)

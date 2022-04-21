@@ -6,7 +6,7 @@ import (
 	"github.com/braintree/manners"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/gin-gonic/gin"
-	"github.com/stream-stack/dispatcher/pkg/protocol"
+	"github.com/stream-stack/common/protocol/operator"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ type statistics struct {
 	TotalDataSize     uint64   `json:"totalDataSize,omitempty"`
 }
 
-func SetStatisticsWithPartition(partition *protocol.Partition, total uint64) {
+func SetStatisticsWithPartition(partition *operator.Partition, total uint64) {
 	if statisticsInst.MaxPartitionBegin <= partition.Begin {
 		statisticsInst.MaxPartitionBegin = partition.Begin
 		statisticsInst.Uris = partition.Store.Uris

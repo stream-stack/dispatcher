@@ -9,8 +9,9 @@ import (
 	http2 "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/ryszard/goskiplist/skiplist"
 	"github.com/sirupsen/logrus"
+	"github.com/stream-stack/common/protocol/operator"
+	store2 "github.com/stream-stack/common/protocol/store"
 	"github.com/stream-stack/dispatcher/pkg/manager"
-	protocol2 "github.com/stream-stack/dispatcher/pkg/protocol"
 	"github.com/stream-stack/dispatcher/pkg/router"
 	"google.golang.org/grpc"
 	"net"
@@ -62,9 +63,9 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 	router.PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
 		iterator := partitions.Range(0, int(parseUint))
 		iterator.Previous()
-		var store *protocol2.StoreSet
+		var store *operator.StoreSet
 		for iterator.Next() {
-			store = iterator.Value().(*protocol2.StoreSet)
+			store = iterator.Value().(*operator.StoreSet)
 		}
 		logrus.Debugf(`获取到的store为 %+v,eventId:%d`, store, parseUint)
 		if store == nil {
@@ -74,10 +75,10 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 
 		manager.StoreSetConnOperation <- func(m map[string]*manager.StoreSetConn) {
 			conn := manager.GetOrCreateConn(ctx, m, store)
-			conn.OpCh <- func(ctx context.Context, connection *grpc.ClientConn, Store *protocol2.StoreSet) {
-				client := protocol2.NewEventServiceClient(connection)
+			conn.OpCh <- func(ctx context.Context, connection *grpc.ClientConn, Store *operator.StoreSet) {
+				client := store2.NewEventServiceClient(connection)
 				logrus.Debugf(`开始向storeset中发送cloudEvent数据`)
-				apply, err := client.Apply(ctx, &protocol2.ApplyRequest{
+				apply, err := client.Apply(ctx, &store2.ApplyRequest{
 					StreamName: StreamId,
 					StreamId:   event.Source(),
 					EventId:    parseUint,
