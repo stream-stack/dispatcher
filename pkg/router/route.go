@@ -25,7 +25,11 @@ func StartRoute(ctx context.Context) {
 func AddPartition(partition *operator.Partition, post func(partition *operator.Partition, total uint64)) {
 	PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
 		logrus.Debugf("add partition %+v", partition)
-		partitions.Set(int(partition.Begin), partition.Store)
+		key := int(partition.Begin)
+		if key == 0 {
+			key = 1
+		}
+		partitions.Set(key, partition.Store)
 		post(partition, uint64(partitions.Len()))
 		logrus.Debugf("add partition end , current partition length: %v", partitions.Len())
 	}
