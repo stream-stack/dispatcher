@@ -7,7 +7,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	http2 "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/ryszard/goskiplist/skiplist"
+	"github.com/huandu/skiplist"
 	"github.com/sirupsen/logrus"
 	"github.com/stream-stack/common/protocol/operator"
 	store2 "github.com/stream-stack/common/protocol/store"
@@ -61,12 +61,12 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 	}
 	result := make(chan error, 1)
 	router.PartitionOpCh <- func(ctx context.Context, partitions *skiplist.SkipList) {
-		iterator := partitions.Range(0, int(parseUint))
-		iterator.Previous()
-		var store *operator.StoreSet
-		for iterator.Next() {
-			store = iterator.Value().(*operator.StoreSet)
+		find := partitions.Find(parseUint)
+		if find == nil {
+			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
+			return
 		}
+		store := find.Value.(*operator.StoreSet)
 		logrus.Debugf(`获取到的store为 %+v,eventId:%d`, store, parseUint)
 		if store == nil {
 			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())

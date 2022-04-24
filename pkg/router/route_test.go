@@ -2,19 +2,23 @@ package router
 
 import (
 	"fmt"
-	"github.com/ryszard/goskiplist/skiplist"
+	"github.com/huandu/skiplist"
 	"testing"
 )
 
 func TestAddPartition(t *testing.T) {
-	intMap := skiplist.NewIntMap()
-	intMap.Set(int(0), "0")
-	intMap.Set(int(1), "0")
-	intMap.Set(int(2), "0")
-	intMap.Set(int(3), "0")
-	iterator := intMap.Range(0, int(0))
-	iterator.Previous()
-	for iterator.Next() {
-		fmt.Println(iterator.Key(), iterator.Value())
-	}
+	list := skiplist.New(skiplist.Uint64Desc)
+
+	list.Set(uint64(0), "hello world")
+	list.Set(uint64(3), 56)
+	list.Set(uint64(5), 90.12)
+
+	find := list.Find(uint64(4))
+	fmt.Println(find)
+	find = list.Find(uint64(3))
+	fmt.Println(find)
+	find = list.Find(uint64(2))
+	fmt.Println(find)
+	find = list.Find(uint64(0))
+	fmt.Println(find)
 }
