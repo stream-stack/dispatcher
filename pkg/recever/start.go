@@ -16,12 +16,8 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 )
-
-//TODO:通过viper获取环境变量,参数
-var StreamId = os.Getenv("STREAM_NAME")
 
 func StartReceive(ctx context.Context, cancelFunc context.CancelFunc) error {
 	//TODO:clientHTTP server参数设置
@@ -79,7 +75,7 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 				client := store2.NewEventServiceClient(connection)
 				logrus.Debugf(`开始向storeset中发送cloudEvent数据`)
 				apply, err := client.Apply(ctx, &store2.ApplyRequest{
-					StreamName: StreamId,
+					StreamName: manager.StreamName,
 					StreamId:   event.Source(),
 					EventId:    parseUint,
 					Data:       json,
