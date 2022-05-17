@@ -62,15 +62,15 @@ func handler(ctx context.Context, event event.Event) protocol.Result {
 			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
 			return
 		}
-		store := find.Value.(*operator.StoreSet)
-		logrus.Debugf(`获取到的store为 %+v,eventId:%d`, store, parseUint)
-		if store == nil {
+		pt := find.Value.(*operator.Partition)
+		logrus.Debugf(`获取到的Partition为 %+v,eventId:%d`, pt, parseUint)
+		if pt == nil {
 			result <- http2.NewResult(http.StatusNotFound, "partition not found for %s", event.ID())
 			return
 		}
 
 		manager.StoreSetConnOperation <- func(m map[string]*manager.StoreSetConn) {
-			conn := manager.GetOrCreateConn(ctx, m, store)
+			conn := manager.GetOrCreateConn(ctx, m, pt.Store)
 			conn.OpCh <- func(ctx context.Context, connection *grpc.ClientConn, Store *operator.StoreSet) {
 				client := store2.NewEventServiceClient(connection)
 				logrus.Debugf(`开始向storeset中发送cloudEvent数据`)
