@@ -6,11 +6,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stream-stack/dispatcher/pkg/config"
-	"github.com/stream-stack/dispatcher/pkg/manager"
-	"github.com/stream-stack/dispatcher/pkg/recever"
-	"github.com/stream-stack/dispatcher/pkg/router"
+	"github.com/stream-stack/dispatcher/pkg/partition"
+	"github.com/stream-stack/dispatcher/pkg/protocol"
+	"github.com/stream-stack/dispatcher/pkg/store"
+	"math/rand"
 	"os"
 	"os/signal"
+	"strings"
+	"time"
 )
 
 func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
@@ -30,15 +33,25 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logrus.SetLevel(logrus.TraceLevel)
-			if err := manager.StartManagerHttp(ctx, cancelFunc); err != nil {
+			rand.Seed(time.Now().UnixNano())
+			logrus.Debug("[config]env print:")
+			for _, s := range os.Environ() {
+				if strings.HasPrefix(s, "STREAM_DISPATCHER") {
+					logrus.Debug(s)
+				}
+			}
+
+			logrus.Debugf("[config]dump config:%v", viper.AllSettings())
+			//连接
+			if err := store.StartStoreConn(ctx); err != nil {
 				return err
 			}
-			if err := manager.StartListWatcher(ctx); err != nil {
+			//分片管理
+			if err := partition.Start(ctx); err != nil {
 				return err
 			}
-			go manager.StartStoreSetConnManager(ctx)
-			go router.StartRoute(ctx)
-			if err := recever.StartReceive(ctx, cancelFunc); err != nil {
+			//协议插件
+			if err := protocol.Start(ctx); err != nil {
 				return err
 			}
 
@@ -46,13 +59,22 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			return nil
 		},
 	}
-	manager.InitFlags()
-	recever.InitFlags()
+	partition.InitFlags()
+	protocol.InitFlags()
+	store.InitFlags()
 
-	viper.AutomaticEnv()
-	viper.AddConfigPath(`.`)
+	viper.AddConfigPath(`./config`)
+	viper.SetConfigName("config")
 	config.BuildFlags(command)
-	_ = viper.BindPFlags(command.Flags())
+	viper.SetEnvPrefix("stream_dispatcher")
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.Errorf("[config]read config error:%v", err)
+	}
+	if err := viper.BindPFlags(command.PersistentFlags()); err != nil {
+		logrus.Errorf("[config]BindPFlags config error:%v", err)
+	}
 
 	return command, ctx, cancelFunc
 }
