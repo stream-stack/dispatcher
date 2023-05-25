@@ -16,16 +16,17 @@ func Start(ctx context.Context) error {
 	pluginDirs := viper.GetStringSlice("protocol-plugin-dir")
 	total := len(pluginDirs)
 	for i, dir := range pluginDirs {
-		logrus.Debugf("[protocol][%d/%d]load %s protocol plugin...", i, total, dir)
 		if err := StartDirPlugin(ctx, dir); err != nil {
 			return err
 		}
+		logrus.Debugf("[protocol][%d/%d]load dir:%v protocol plugin finish", i+1, total, dir)
 	}
 	return nil
 }
 
 func StartDirPlugin(ctx context.Context, dir string) error {
-	glob, err := filepath.Glob(filepath.Join(dir, "*.so"))
+	join := filepath.Join(dir, "*", "*.so")
+	glob, err := filepath.Glob(join)
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func startPlugin(ctx context.Context, s string) error {
 		}
 	}
 
-	start, ok := lookup.(func(ctx context.Context, f func(ctx context.Context, event *v1.CloudEvent) error) error)
+	start, ok := lookup.(func(ctx context.Context, f func(ctx context.Context, event *v1.CloudEvent) []error) error)
 	if !ok {
 		logrus.Errorf("[protocol]convert StartPlugin function error")
 		return fmt.Errorf(`convert StartPlugin function error`)

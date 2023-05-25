@@ -23,10 +23,10 @@ func Start(ctx context.Context) error {
 			}
 		}
 	}()
-	total := len(store.StoreClients)
+	total := len(store.Clients)
 	current := 1
-	for _, c := range store.StoreClients {
-		logrus.Debugf("[partition][%d/%d]begin subscribe partition to store address:%v", current, total, c)
+	for _, c := range store.Clients {
+		logrus.Debugf("[partition][%d/%d]begin subscribe partition to store address:%v", current, total, c.GetState().String())
 		storeClient := v1.NewSubscriptionClient(c)
 		if err := startPartitionSubscription(ctx, storeClient); err != nil {
 			return err
@@ -38,7 +38,7 @@ func Start(ctx context.Context) error {
 
 func AddPartition(partition *v1.Partition) {
 	OpCh <- func(partitions *skiplist.SkipList) {
-		logrus.Debugf("[protocol]add partition %+v", partition)
+		logrus.Debugf("[partition]add partition %+v", partition)
 		find := partitions.Find(partition.Begin)
 		if find != nil {
 			o := find.Value.(*v1.Partition)
@@ -46,7 +46,7 @@ func AddPartition(partition *v1.Partition) {
 				return
 			}
 			if o.CreateTime < partition.CreateTime {
-				logrus.Infof("[protocol]partition exist , but createTime less current partition createTime,exist paratition: %+v,current partition:%+v", o, partition)
+				logrus.Infof("[partition]partition exist , but createTime less current partition createTime,exist paratition: %+v,current partition:%+v", o, partition)
 				partitions.Remove(partition.Begin)
 			}
 		}
