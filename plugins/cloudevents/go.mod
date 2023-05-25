@@ -7,7 +7,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/sirupsen/logrus v1.9.2
 	github.com/stream-stack/common v0.0.0-20230523104717-004142f94795
-	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -25,4 +24,5 @@ require (
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20210402141018-6c239bbf2bb1 // indirect
 	google.golang.org/grpc v1.44.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 )
