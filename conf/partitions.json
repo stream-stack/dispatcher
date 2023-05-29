@@ -3,9 +3,9 @@
     "name": "test",
     "virtualNodeCount": 100,
     "addrs": [
-      "localhost:3000",
-      "localhost:3000",
-      "localhost:3000"
+      "localhost:50051",
+      "localhost:50052",
+      "localhost:50053"
     ]
   }
 ]
