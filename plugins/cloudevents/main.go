@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
 	v1 "github.com/stream-stack/common/cloudevents.io/genproto/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"net"
 )
 
@@ -54,12 +55,10 @@ func receiver(ctx context.Context, e event.Event) protocol.Result {
 		SpecVersion: e.SpecVersion(),
 		Type:        e.Type(),
 		Data:        &v1.CloudEvent_BinaryData{BinaryData: e.Data()},
+		Attributes: map[string]*v1.CloudEvent_CloudEventAttributeValue{
+			"timestamp": {Attr: &v1.CloudEvent_CloudEventAttributeValue_CeTimestamp{CeTimestamp: timestamppb.Now()}},
+		},
 	}
-	//err = protojson.Unmarshal(json, pe)
-	//if err != nil {
-	//	logrus.Debugf(`[plugin][cloudevents]unmarshal event(json) to protobuf error:%v`, err)
-	//	return err
-	//}
 	errors := storeFunc(ctx, pe)
 	if len(errors) > 0 {
 		logrus.Errorf("[plugin][cloudevents]store event error:%v", errors)
