@@ -3,25 +3,27 @@ package store
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/stream-stack/common"
 	v1 "github.com/stream-stack/common/cloudevents.io/genproto/v1"
 	"google.golang.org/grpc"
+	"strconv"
 )
 
-func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent, clientAddr []string) []error {
-	clients := make([]*grpc.ClientConn, len(clientAddr))
-	for i, s := range clientAddr {
-		conn, ok := Clients[s]
-		if !ok {
-			logrus.Errorf("[store-client]store connection not found for %s", s)
-			return []error{fmt.Errorf("store connection not found for %s", s)}
-		}
-		clients[i] = conn
+func formatPartitionKey(event *v1.CloudEvent) []byte {
+	return []byte(fmt.Sprintf("%s/%s", event.GetSource(), event.GetId()))
+}
+
+func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
+	key := formatPartitionKey(event)
+	set, slot := consistent.GetNode(key)
+	//add slot to event
+	event.Attributes[common.CloudEventAttrSlotKey] = &v1.CloudEvent_CloudEventAttributeValue{
+		Attr: &v1.CloudEvent_CloudEventAttributeValue_CeString{CeString: strconv.FormatUint(uint64(slot), 10)},
 	}
-	total := len(clients)
+	total := len(set.storeConn)
 	c := make(chan interface{}, total)
-	for _, client := range clients {
+	for _, client := range set.storeConn {
 		go sendCloudEvent(ctx, client, event, c)
 	}
 	errCount := 0

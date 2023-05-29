@@ -3,7 +3,6 @@ module github.com/stream-stack/dispatcher
 go 1.18
 
 require (
-	github.com/huandu/skiplist v1.2.0
 	github.com/sirupsen/logrus v1.9.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1

@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	v1 "github.com/stream-stack/common/cloudevents.io/genproto/v1"
-	"github.com/stream-stack/dispatcher/pkg/partition"
+	"github.com/stream-stack/dispatcher/pkg/store"
 	"path/filepath"
 	"plugin"
 	"strings"
@@ -59,5 +59,5 @@ func startPlugin(ctx context.Context, s string) error {
 		logrus.Errorf("[protocol]convert StartPlugin function error")
 		return fmt.Errorf(`convert StartPlugin function error`)
 	}
-	return start(ctx, partition.StoreCloudEvent)
+	return start(ctx, store.SaveCloudEvent)
 }

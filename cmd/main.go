@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stream-stack/dispatcher/pkg/config"
-	"github.com/stream-stack/dispatcher/pkg/partition"
 	"github.com/stream-stack/dispatcher/pkg/protocol"
 	"github.com/stream-stack/dispatcher/pkg/store"
 	"math/rand"
@@ -46,10 +45,6 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			if err := store.StartStoreConn(ctx); err != nil {
 				return err
 			}
-			//分片管理
-			if err := partition.Start(ctx); err != nil {
-				return err
-			}
 			//协议插件
 			if err := protocol.Start(ctx); err != nil {
 				return err
@@ -59,7 +54,6 @@ func NewCommand() (*cobra.Command, context.Context, context.CancelFunc) {
 			return nil
 		},
 	}
-	partition.InitFlags()
 	protocol.InitFlags()
 	store.InitFlags()
 

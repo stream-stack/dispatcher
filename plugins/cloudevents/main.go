@@ -8,6 +8,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/hashicorp/go-multierror"
 	"github.com/sirupsen/logrus"
+	"github.com/stream-stack/common"
 	v1 "github.com/stream-stack/common/cloudevents.io/genproto/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"net"
@@ -56,7 +57,7 @@ func receiver(ctx context.Context, e event.Event) protocol.Result {
 		Type:        e.Type(),
 		Data:        &v1.CloudEvent_BinaryData{BinaryData: e.Data()},
 		Attributes: map[string]*v1.CloudEvent_CloudEventAttributeValue{
-			"timestamp": {Attr: &v1.CloudEvent_CloudEventAttributeValue_CeTimestamp{CeTimestamp: timestamppb.Now()}},
+			common.CloudEventAttrTimestampKey: {Attr: &v1.CloudEvent_CloudEventAttributeValue_CeTimestamp{CeTimestamp: timestamppb.Now()}},
 		},
 	}
 	errors := storeFunc(ctx, pe)

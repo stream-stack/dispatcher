@@ -8,8 +8,7 @@ import (
 
 func InitFlags() {
 	config.RegisterFlags(func(c *cobra.Command) {
-		c.PersistentFlags().StringSlice("store-address-list",
-			[]string{"localhost:8080", "localhost:8081", "localhost:8082"}, "store server address list")
 		c.PersistentFlags().Duration("store-timeout", time.Second*2, "store cloudevent timeout")
+		c.PersistentFlags().String("store-partition-config-file", "./conf/partitions.json", "store partition config file")
 	})
 }
