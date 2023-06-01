@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"github.com/stream-stack/common/partition"
 	"hash/crc32"
 	"sort"
 	"strconv"
@@ -11,14 +12,14 @@ type Consistent struct {
 	//排序的hash虚拟结点
 	hashSortedNodes []uint32
 	//虚拟结点对应的结点信息
-	circle map[uint32]*PartitionSet
+	circle map[uint32]*partition.Set
 	//已绑定的结点
 	nodes map[string]bool
 }
 
 func NewConsistent() *Consistent {
 	return &Consistent{
-		circle:          make(map[uint32]*PartitionSet),
+		circle:          make(map[uint32]*partition.Set),
 		nodes:           make(map[string]bool),
 		hashSortedNodes: make([]uint32, 0),
 	}
@@ -28,7 +29,7 @@ func (c *Consistent) hashKey(key []byte) uint32 {
 	return crc32.ChecksumIEEE(key)
 }
 
-func (c *Consistent) Add(set *PartitionSet) error {
+func (c *Consistent) Add(set *partition.Set) error {
 	setName := set.Name
 	if _, ok := c.nodes[setName]; ok {
 		return errors.New("node already existed")
@@ -49,7 +50,7 @@ func (c *Consistent) Add(set *PartitionSet) error {
 	return nil
 }
 
-func (c *Consistent) GetNode(key []byte) (*PartitionSet, uint32) {
+func (c *Consistent) GetNode(key []byte) (*partition.Set, uint32) {
 	hash := c.hashKey(key)
 	i := c.getPosition(hash)
 

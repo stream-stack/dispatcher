@@ -21,9 +21,9 @@ func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
 	event.Attributes[common.CloudEventAttrSlotKey] = &v1.CloudEvent_CloudEventAttributeValue{
 		Attr: &v1.CloudEvent_CloudEventAttributeValue_CeString{CeString: strconv.FormatUint(uint64(slot), 10)},
 	}
-	total := len(set.storeConn)
+	total := len(set.StoreConn)
 	c := make(chan interface{}, total)
-	for _, client := range set.storeConn {
+	for _, client := range set.StoreConn {
 		go sendCloudEvent(ctx, client, event, c)
 	}
 	errCount := 0
@@ -47,7 +47,7 @@ func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
 }
 
 func sendCloudEvent(ctx context.Context, client *grpc.ClientConn, event *v1.CloudEvent, c chan interface{}) {
-	storeClient := v1.NewStoreClient(client)
+	storeClient := v1.NewPublicEventServiceClient(client)
 	duration := viper.GetDuration(`store-timeout`)
 	timeout, cancelFunc := context.WithTimeout(ctx, duration)
 	defer cancelFunc()

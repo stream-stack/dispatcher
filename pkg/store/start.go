@@ -2,18 +2,17 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/stream-stack/common/partition"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	_ "google.golang.org/grpc/health"
-	"os"
 	"time"
 )
 
-var ps = make([]*PartitionSet, 0)
+var ps = make([]*partition.Set, 0)
 var consistent = NewConsistent()
 
 func StartStoreConn(ctx context.Context) error {
@@ -21,8 +20,10 @@ func StartStoreConn(ctx context.Context) error {
 	if partitionFile == "" {
 		return fmt.Errorf("[store-client]store-partition-config-file not found")
 	}
-	if err := initPartition(partitionFile); err != nil {
+	if t, err := partition.Read(partitionFile); err != nil {
 		return err
+	} else {
+		ps = t
 	}
 
 	if err := connectionStore(ctx); err != nil {
@@ -43,7 +44,7 @@ func initConsistent() error {
 
 func connectionStore(ctx context.Context) error {
 	for _, set := range ps {
-		set.storeConn = make([]*grpc.ClientConn, len(set.Addrs))
+		set.StoreConn = make([]*grpc.ClientConn, len(set.Addrs))
 		for i, addr := range set.Addrs {
 			logrus.Debugf("[store-client]begin connection to store address:%v", addr)
 			//TODO: 接入grpc中间件,重试,opentelemetry
@@ -56,14 +57,14 @@ func connectionStore(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			set.storeConn[i] = client
+			set.StoreConn[i] = client
 		}
 	}
 	go func() {
 		select {
 		case <-ctx.Done():
 			for _, set := range ps {
-				for _, conn := range set.storeConn {
+				for _, conn := range set.StoreConn {
 					if err := conn.Close(); err != nil {
 						logrus.Errorf("[store-client]close store connection error:%v", err)
 					}
@@ -73,25 +74,3 @@ func connectionStore(ctx context.Context) error {
 	}()
 	return nil
 }
-
-func initPartition(file string) error {
-	readFile, err := os.ReadFile(file)
-	if err != nil {
-		return err
-	}
-	t := make([]*PartitionSet, 0)
-	if err := json.Unmarshal(readFile, &t); err != nil {
-		return err
-	}
-	ps = t
-	return nil
-}
-
-type PartitionSet struct {
-	Name             string   `json:"name"`
-	VirtualNodeCount int      `json:"virtualNodeCount"`
-	Addrs            []string `json:"addrs"`
-	storeConn        []*grpc.ClientConn
-}
-
-type PartitionSets []PartitionSet
