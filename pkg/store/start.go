@@ -16,7 +16,7 @@ var ps = make([]*partition.Set, 0)
 var consistent = NewConsistent()
 
 func StartStoreConn(ctx context.Context) error {
-	partitionFile := viper.GetString("store-partition-config-file")
+	partitionFile := viper.GetString("StorePartitionConfigFile")
 	if partitionFile == "" {
 		return fmt.Errorf("[store-client]store-partition-config-file not found")
 	}

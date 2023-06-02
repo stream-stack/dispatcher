@@ -48,7 +48,7 @@ func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
 
 func sendCloudEvent(ctx context.Context, client *grpc.ClientConn, event *v1.CloudEvent, c chan interface{}) {
 	storeClient := v1.NewPublicEventServiceClient(client)
-	duration := viper.GetDuration(`store-timeout`)
+	duration := viper.GetDuration(`StoreTimeout`)
 	timeout, cancelFunc := context.WithTimeout(ctx, duration)
 	defer cancelFunc()
 	store, err := storeClient.Store(timeout, event)

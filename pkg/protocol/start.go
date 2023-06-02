@@ -13,7 +13,7 @@ import (
 )
 
 func Start(ctx context.Context) error {
-	pluginDirs := viper.GetStringSlice("protocol-plugin-dir")
+	pluginDirs := viper.GetStringSlice("ProtocolPluginDir")
 	total := len(pluginDirs)
 	for i, dir := range pluginDirs {
 		if err := StartDirPlugin(ctx, dir); err != nil {

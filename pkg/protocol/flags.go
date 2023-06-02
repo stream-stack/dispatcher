@@ -7,7 +7,7 @@ import (
 
 func InitFlags() {
 	config.RegisterFlags(func(c *cobra.Command) {
-		c.PersistentFlags().StringSlice("protocol-plugin-dir", []string{"plugins"}, "protocol-plugin-dir")
+		c.PersistentFlags().StringSlice("ProtocolPluginDir", []string{"plugins"}, "protocol-plugin-dir")
 	})
 
 }
