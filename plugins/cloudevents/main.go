@@ -20,7 +20,7 @@ var storeFunc func(ctx context.Context, event *v1.CloudEvent) []error
 
 func StartPlugin(ctx context.Context, f func(ctx context.Context, event *v1.CloudEvent) []error) error {
 	logrus.Debugf("[plugin][cloudevents] start cloudevents plugin ...")
-	address := ":7080"
+	address := ":8080"
 	listen, err := net.Listen("tcp", address)
 	if err != nil {
 		logrus.Errorf("[plugin][cloudevents]listen %s error:%s", address, err)
