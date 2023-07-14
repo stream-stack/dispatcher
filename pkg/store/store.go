@@ -2,29 +2,26 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"github.com/spf13/viper"
-	"github.com/stream-stack/common"
 	v1 "github.com/stream-stack/common/cloudevents.io/genproto/v1"
+	"github.com/stream-stack/common/util"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"strconv"
 )
 
-func formatPartitionKey(event *v1.CloudEvent) []byte {
-	return []byte(fmt.Sprintf("%s/%s", event.GetSource(), event.GetId()))
-}
-
 func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
-	key := formatPartitionKey(event)
+	key := util.FormatKeyWithEvent(event)
 	set, slot := consistent.GetNode(key)
-	//add slot to event
-	event.Attributes[common.CloudEventAttrSlotKey] = &v1.CloudEvent_CloudEventAttributeValue{
-		Attr: &v1.CloudEvent_CloudEventAttributeValue_CeString{CeString: strconv.FormatUint(uint64(slot), 10)},
+	request := &v1.CloudEventStoreRequest{
+		Event:     event,
+		Slot:      strconv.FormatUint(uint64(slot), 10),
+		Timestamp: timestamppb.Now(),
 	}
 	total := len(set.StoreConn)
 	c := make(chan interface{}, total)
 	for _, client := range set.StoreConn {
-		go sendCloudEvent(ctx, client, event, c)
+		go sendCloudEvent(ctx, client, request, c)
 	}
 	errCount := 0
 	errs := make([]error, 0)
@@ -46,12 +43,12 @@ func SaveCloudEvent(ctx context.Context, event *v1.CloudEvent) []error {
 	return []error{}
 }
 
-func sendCloudEvent(ctx context.Context, client *grpc.ClientConn, event *v1.CloudEvent, c chan interface{}) {
+func sendCloudEvent(ctx context.Context, client *grpc.ClientConn, request *v1.CloudEventStoreRequest, c chan interface{}) {
 	storeClient := v1.NewPublicEventServiceClient(client)
 	duration := viper.GetDuration(`StoreTimeout`)
 	timeout, cancelFunc := context.WithTimeout(ctx, duration)
 	defer cancelFunc()
-	store, err := storeClient.Store(timeout, event)
+	store, err := storeClient.Store(timeout, request)
 	if err != nil {
 		c <- err
 		return
